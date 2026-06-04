@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TBC UZ — RAG Qidiruv</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:#0038a8; --blue-glow:#2563eb; --red:#e8001c;
+  --gold:#f5c842; --muted:#7b8db8; --text:#e8eeff;
+  --card:rgba(255,255,255,0.05); --border:rgba(255,255,255,0.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;font-family:'Inter',sans-serif;background:#020c24;color:var(--text);overflow-x:hidden;}
+
+/* BG */
+.bg{position:fixed;inset:0;z-index:0;overflow:hidden;}
+.bg::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#020818 0%,#04122e 30%,#071a3e 60%,#0a1f4a 80%,#122760 100%);}
+.stars{position:absolute;inset:0;background-image:
+  radial-gradient(1px 1px at 10% 10%,rgba(255,255,255,.9),transparent),
+  radial-gradient(1px 1px at 25% 7%,rgba(255,255,255,.7),transparent),
+  radial-gradient(1.5px 1.5px at 42% 14%,rgba(255,255,255,.8),transparent),
+  radial-gradient(1px 1px at 60% 5%,rgba(255,255,255,.9),transparent),
+  radial-gradient(1px 1px at 75% 17%,rgba(255,255,255,.6),transparent),
+  radial-gradient(1.5px 1.5px at 87% 8%,rgba(255,255,255,.85),transparent),
+  radial-gradient(1px 1px at 4% 28%,rgba(255,255,255,.7),transparent),
+  radial-gradient(1px 1px at 33% 23%,rgba(255,255,255,.5),transparent),
+  radial-gradient(1px 1px at 53% 30%,rgba(255,255,255,.7),transparent),
+  radial-gradient(1px 1px at 70% 13%,rgba(255,255,255,.6),transparent),
+  radial-gradient(1px 1px at 90% 32%,rgba(255,255,255,.5),transparent),
+  radial-gradient(1px 1px at 18% 38%,rgba(255,255,255,.4),transparent),
+  radial-gradient(1px 1px at 48% 42%,rgba(255,255,255,.5),transparent),
+  radial-gradient(1px 1px at 80% 40%,rgba(255,255,255,.6),transparent);}
+.moon{position:absolute;top:6%;right:10%;width:52px;height:52px;background:radial-gradient(circle at 38% 38%,#fff8e0,#f5e080 40%,#e8c840);border-radius:50%;box-shadow:0 0 28px rgba(245,200,66,.5),0 0 70px rgba(245,200,66,.2);}
+.skyline{position:absolute;bottom:0;left:0;right:0;width:100%;}
+.city-glow{position:absolute;bottom:0;left:0;right:0;height:180px;background:linear-gradient(to top,rgba(30,60,140,.6) 0%,rgba(20,40,110,.3) 40%,transparent 100%);}
+.overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(2,8,24,.2) 0%,rgba(2,8,24,.1) 50%,rgba(2,8,24,.55) 85%,rgba(2,8,24,.9) 100%);}
+.nest{position:fixed;bottom:-70px;right:-70px;width:360px;height:360px;z-index:2;opacity:.07;animation:spin 50s linear infinite;pointer-events:none;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PAGES */
+.page{position:relative;z-index:10;display:none;min-height:100vh;}
+.page.active{display:flex;flex-direction:column;}
+
+/* ── LOGIN PAGE ── */
+#loginPage{align-items:center;justify-content:center;}
+.login-card{background:rgba(13,27,62,.85);backdrop-filter:blur(20px);border:1px solid rgba(37,99,235,.25);border-radius:24px;padding:44px 40px;width:100%;max-width:380px;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 60px rgba(37,99,235,.12);}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;}
+.login-logo-box{width:46px;height:46px;background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-weight:900;font-size:12px;color:white;box-shadow:0 4px 18px rgba(0,56,168,.5);}
+.login-logo-name{font-family:'Unbounded',sans-serif;font-weight:700;font-size:18px;color:white;}
+.login-logo-name small{display:block;font-family:'Inter',sans-serif;font-weight:300;font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.login-title{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;color:white;margin-bottom:6px;text-align:center;}
+.login-sub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:28px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;}
+.field input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px 14px;font-family:'Inter',sans-serif;font-size:14px;color:white;outline:none;transition:border-color .2s;}
+.field input:focus{border-color:rgba(37,99,235,.6);}
+.field input::placeholder{color:rgba(255,255,255,.22);}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--blue),var(--blue-glow));color:white;border:none;border-radius:12px;padding:13px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;transition:all .2s;box-shadow:0 4px 18px rgba(37,99,235,.38);}
+.btn-primary:hover{box-shadow:0 6px 26px rgba(37,99,235,.55);transform:translateY(-1px);}
+.btn-primary:active{transform:translateY(0);}
+.login-err{color:#f87171;font-size:12px;text-align:center;min-height:18px;margin-top:10px;}
+
+/* ── MAIN APP ── */
+#appPage{flex-direction:column;}
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid var(--border);backdrop-filter:blur(12px);background:rgba(2,8,24,.45);flex-shrink:0;}
+.h-logo{display:flex;align-items:center;gap:12px;}
+.h-logo-box{width:36px;height:36px;background:var(--blue);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-weight:900;font-size:10px;color:white;}
+.h-logo-name{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15px;color:white;}
+.h-logo-name small{display:block;font-family:'Inter',sans-serif;font-weight:300;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+.h-right{display:flex;align-items:center;gap:12px;}
+.h-user{font-size:12px;color:var(--muted);}
+.h-user span{color:white;font-weight:600;}
+.btn-sm{background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.btn-sm:hover{background:rgba(255,255,255,.12);color:white;}
+.btn-sm.danger:hover{background:rgba(232,0,28,.2);border-color:rgba(232,0,28,.4);color:#f87171;}
+.tab-bar{display:flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:3px;}
+.tab{padding:6px 16px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;}
+.tab.active{background:var(--blue);color:white;box-shadow:0 2px 10px rgba(0,56,168,.4);}
+
+/* Content */
+.content{flex:1;overflow-y:auto;padding:28px 24px 70px;}
+.content-inner{max-width:750px;margin:0 auto;}
+
+/* RAG selector */
+.rag-section{margin-bottom:28px;}
+.section-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.rag-grid{display:flex;flex-wrap:wrap;gap:10px;}
+.rag-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:10px;}
+.rag-card:hover{background:rgba(37,99,235,.12);border-color:rgba(37,99,235,.35);}
+.rag-card.selected{background:rgba(37,99,235,.18);border-color:rgba(37,99,235,.6);box-shadow:0 0 0 2px rgba(37,99,235,.25);}
+.rag-icon{width:32px;height:32px;background:rgba(37,99,235,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.rag-info{}
+.rag-name{font-size:13px;font-weight:600;color:white;}
+.rag-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.rag-count{font-size:10px;color:#60a5fa;margin-top:2px;}
+.rag-card.selected .rag-icon{background:rgba(37,99,235,.4);}
+
+/* Search */
+.search-wrap{background:rgba(255,255,255,.06);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:5px 5px 5px 18px;display:flex;align-items:center;gap:8px;margin-bottom:20px;transition:border-color .2s,box-shadow .2s;}
+.search-wrap:focus-within{border-color:rgba(37,99,235,.55);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+.search-icon{color:var(--muted);font-size:17px;flex-shrink:0;}
+.search-input{flex:1;background:transparent;border:none;outline:none;color:white;font-family:'Inter',sans-serif;font-size:15px;padding:9px 0;}
+.search-input::placeholder{color:rgba(255,255,255,.28);}
+.search-btn{background:linear-gradient(135deg,var(--blue),var(--blue-glow));color:white;border:none;border-radius:10px;padding:10px 20px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;box-shadow:0 3px 14px rgba(37,99,235,.35);transition:all .2s;}
+.search-btn:hover{transform:translateY(-1px);box-shadow:0 5px 20px rgba(37,99,235,.5);}
+.search-btn:disabled{background:rgba(255,255,255,.1);box-shadow:none;cursor:not-allowed;transform:none;}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.chip{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all .2s;}
+.chip:hover{background:rgba(37,99,235,.18);border-color:rgba(37,99,235,.4);color:#93b4ff;}
+
+/* Status */
+.status{text-align:center;font-size:12px;min-height:20px;margin-bottom:16px;font-weight:500;color:var(--muted);}
+.status.loading{color:#60a5fa;}
+.status.ok{color:#4ade80;}
+.status.err{color:#f87171;}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(96,165,250,.3);border-top-color:#60a5fa;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Result cards */
+.result-card{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:10px;display:flex;gap:16px;align-items:flex-start;transition:all .22s;animation:fd .35s ease forwards;opacity:0;position:relative;overflow:hidden;}
+.result-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--blue-glow),var(--blue));opacity:0;transition:opacity .2s;}
+.result-card:hover{background:rgba(255,255,255,.08);border-color:rgba(37,99,235,.3);transform:translateX(3px);}
+.result-card:hover::before{opacity:1;}
+@keyframes fd{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.result-card:nth-child(1){animation-delay:.04s}.result-card:nth-child(2){animation-delay:.1s}.result-card:nth-child(3){animation-delay:.16s}.result-card:nth-child(4){animation-delay:.22s}.result-card:nth-child(5){animation-delay:.28s}
+.id-col{display:flex;flex-direction:column;align-items:center;min-width:52px;padding:2px 0;}
+.id-num{font-family:'Unbounded',sans-serif;font-weight:900;font-size:24px;color:white;line-height:1;}
+.id-lbl{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+.vline{width:1px;background:var(--border);align-self:stretch;}
+.card-body{flex:1;}
+.q-main{font-size:14px;font-weight:500;color:#e8eeff;line-height:1.55;margin-bottom:5px;}
+.q-sub{font-size:12px;color:var(--muted);line-height:1.4;}
+.score-row{display:flex;align-items:center;gap:8px;margin-top:9px;}
+.score-bg{flex:1;max-width:80px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;}
+.score-fill{height:100%;border-radius:2px;}
+.high .score-fill{background:linear-gradient(90deg,#22c55e,#4ade80);}
+.mid .score-fill{background:linear-gradient(90deg,#eab308,#fbbf24);}
+.low .score-fill{background:linear-gradient(90deg,#64748b,#94a3b8);}
+.score-txt{font-size:11px;font-weight:700;}
+.high .score-txt{color:#4ade80;}.mid .score-txt{color:#fbbf24;}.low .score-txt{color:#94a3b8;}
+
+/* Lang switch */
+.lang-sw{display:flex;gap:2px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:3px;}
+.lang-btn{padding:5px 12px;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;}
+.lang-btn.active{background:var(--blue);color:white;}
+
+/* Empty */
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty .ico{font-size:44px;margin-bottom:12px;opacity:.6;}
+.empty p{font-size:14px;line-height:1.7;}
+
+/* ── ADMIN TAB ── */
+.admin-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin-bottom:20px;}
+.admin-title{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:white;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.admin-title .ico{font-size:16px;}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.form-field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:140px;}
+.form-field label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+.form-field input,.form-field select{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Inter',sans-serif;font-size:13px;color:white;outline:none;transition:border-color .2s;}
+.form-field input:focus,.form-field select:focus{border-color:rgba(37,99,235,.55);}
+.form-field input::placeholder{color:rgba(255,255,255,.22);}
+.form-field select option{background:#0d1b3e;color:white;}
+.btn-add{background:linear-gradient(135deg,#16a34a,#22c55e);color:white;border:none;border-radius:9px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-add:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(34,197,94,.35);}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--border);}
+td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,.05);color:var(--text);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.badge.admin{background:rgba(232,0,28,.15);color:#f87171;}
+.badge.user{background:rgba(37,99,235,.15);color:#93b4ff;}
+.btn-del{background:rgba(232,0,28,.12);border:1px solid rgba(232,0,28,.25);color:#f87171;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all .2s;}
+.btn-del:hover{background:rgba(232,0,28,.25);}
+.msg{font-size:12px;min-height:16px;margin-top:8px;font-weight:500;}
+.msg.ok{color:#4ade80;}.msg.err{color:#f87171;}
+
+/* Footer */
+footer{position:fixed;bottom:0;left:0;right:0;z-index:15;text-align:center;padding:10px;font-size:10px;font-weight:500;color:rgba(123,141,184,.4);letter-spacing:1.5px;text-transform:uppercase;pointer-events:none;}
+footer span{color:var(--gold);font-weight:700;}
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="stars"></div>
+  <div class="moon"></div>
+  <svg class="skyline" viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0d2560" stop-opacity=".9"/>
+        <stop offset="100%" stop-color="#020c24" stop-opacity="1"/>
+      </linearGradient>
+      <filter id="gw"><feGaussianBlur stdDeviation="2" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <g fill="#071433" opacity=".9">
+      <rect x="0" y="220" width="60" height="100"/><rect x="15" y="195" width="35" height="25"/>
+      <rect x="65" y="235" width="45" height="85"/><rect x="115" y="225" width="55" height="95"/>
+      <rect x="270" y="170" width="80" height="150"/><rect x="280" y="155" width="60" height="20"/>
+      <rect x="295" y="140" width="30" height="18"/><rect x="306" y="120" width="8" height="22"/>
+      <rect x="360" y="190" width="55" height="130"/><rect x="365" y="175" width="45" height="20"/>
+      <rect x="468" y="100" width="10" height="220"/>
+      <polygon points="468,100 478,100 473,75" fill="#071433"/>
+      <rect x="465" y="130" width="16" height="10"/><rect x="463" y="150" width="20" height="8"/>
+      <rect x="490" y="200" width="65" height="120"/><rect x="495" y="180" width="55" height="25"/>
+      <rect x="560" y="185" width="75" height="135"/><rect x="565" y="160" width="65" height="28"/>
+      <rect x="640" y="155" width="100" height="165"/><rect x="650" y="138" width="80" height="22"/>
+      <rect x="665" y="122" width="50" height="20"/><rect x="680" y="108" width="20" height="18"/>
+      <rect x="687" y="92" width="6" height="18"/>
+      <rect x="745" y="175" width="70" height="145"/><rect x="750" y="155" width="60" height="25"/>
+      <rect x="820" y="195" width="55" height="125"/>
+      <rect x="880" y="210" width="50" height="110"/><rect x="935" y="200" width="65" height="120"/>
+      <rect x="940" y="182" width="55" height="22"/>
+      <rect x="1005" y="215" width="55" height="105"/><rect x="1065" y="225" width="45" height="95"/>
+      <rect x="1115" y="220" width="60" height="100"/><rect x="1180" y="230" width="50" height="90"/>
+      <rect x="1235" y="215" width="70" height="105"/><rect x="1310" y="225" width="55" height="95"/>
+      <rect x="1370" y="235" width="70" height="85"/>
+    </g>
+    <g fill="#ffd86e" opacity=".8" filter="url(#gw)">
+      <rect x="278" y="178" width="5" height="5"/><rect x="290" y="185" width="5" height="5"/>
+      <rect x="302" y="175" width="5" height="5"/><rect x="278" y="195" width="5" height="5"/>
+      <rect x="495" y="205" width="6" height="5"/><rect x="507" y="205" width="6" height="5"/>
+      <rect x="519" y="205" width="6" height="5"/><rect x="495" y="218" width="6" height="5"/>
+      <rect x="570" y="195" width="6" height="5"/><rect x="582" y="195" width="6" height="5"/>
+      <rect x="648" y="175" width="7" height="6"/><rect x="662" y="175" width="7" height="6"/>
+      <rect x="676" y="175" width="7" height="6"/><rect x="690" y="175" width="7" height="6"/>
+      <rect x="648" y="192" width="7" height="6"/><rect x="676" y="192" width="7" height="6"/>
+      <rect x="662" y="210" width="7" height="6"/>
+      <rect x="752" y="190" width="6" height="5"/><rect x="764" y="190" width="6" height="5"/>
+      <rect x="938" y="208" width="6" height="5"/><rect x="950" y="208" width="6" height="5"/>
+      <rect x="1118" y="218" width="6" height="5"/><rect x="1130" y="218" width="6" height="5"/>
+    </g>
+    <g fill="#a8c4ff" opacity=".55">
+      <rect x="365" y="195" width="5" height="4"/><rect x="375" y="195" width="5" height="4"/>
+      <rect x="830" y="205" width="5" height="4"/><rect x="843" y="205" width="5" height="4"/>
+      <rect x="1243" y="210" width="6" height="5"/><rect x="1255" y="210" width="6" height="5"/>
+    </g>
+    <ellipse cx="720" cy="315" rx="180" ry="22" fill="#1a3a8a" opacity=".45"/>
+    <rect x="0" y="310" width="1440" height="20" fill="#020c24"/>
+  </svg>
+  <div class="city-glow"></div>
+  <div class="overlay"></div>
+</div>
+
+<svg class="nest" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="150" cy="150" r="140" stroke="#2563eb" stroke-width="1.5" fill="none"/>
+  <circle cx="150" cy="150" r="115" stroke="#2563eb" stroke-width="1.2" fill="none"/>
+  <circle cx="150" cy="150" r="90"  stroke="#2563eb" stroke-width="1.2" fill="none"/>
+  <circle cx="150" cy="150" r="65"  stroke="#2563eb" stroke-width="1.2" fill="none"/>
+  <circle cx="150" cy="150" r="40"  stroke="#2563eb" stroke-width="1.5" fill="none"/>
+  <circle cx="150" cy="150" r="16"  stroke="#2563eb" stroke-width="2"   fill="none"/>
+  <line x1="150" y1="8"   x2="150" y2="292" stroke="#2563eb" stroke-width="0.8"/>
+  <line x1="8"   y1="150" x2="292" y2="150" stroke="#2563eb" stroke-width="0.8"/>
+  <line x1="51"  y1="51"  x2="249" y2="249" stroke="#2563eb" stroke-width="0.6"/>
+  <line x1="249" y1="51"  x2="51"  y2="249" stroke="#2563eb" stroke-width="0.6"/>
+</svg>
+
+<div class="page active" id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-box">TBC</div>
+      <div class="login-logo-name">TBC UZ<small>RAG Tizimi</small></div>
+    </div>
+    <div class="login-title">Kirish</div>
+    <div class="login-sub">Tizimdan foydalanish uchun login qiling</div>
+    <div class="field"><label>Login</label><input type="text" id="loginUser" placeholder="username" autocomplete="username"/></div>
+    <div class="field"><label>Parol</label><input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/></div>
+    <button class="btn-primary" onclick="doLogin()">Kirish →</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<div class="page" id="appPage">
+  <header>
+    <div class="h-logo">
+      <div class="h-logo-box">TBC</div>
+      <div class="h-logo-name">TBC UZ<small>RAG Qidiruv</small></div>
+    </div>
+    <div class="h-right">
+      <div class="lang-sw">
+        <button class="lang-btn active" id="btnUz" onclick="setLang('uz')">UZ</button>
+        <button class="lang-btn" id="btnRu" onclick="setLang('ru')">RU</button>
+      </div>
+      <div class="tab-bar" id="tabBar" style="display:none">
+        <button class="tab active" id="tabSearch" onclick="showTab('search')">Qidiruv</button>
+        <button class="tab" id="tabAdmin" onclick="showTab('admin')">Admin</button>
+      </div>
+      <div class="h-user">Salom, <span id="userName">—</span></div>
+      <button class="btn-sm danger" onclick="doLogout()">Chiqish</button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="content-inner">
+
+      <div id="tabSearchContent">
+        <div class="rag-section">
+          <div class="section-label" id="lbl-rag">RAG versiyasini tanlang</div>
+          <div class="rag-grid" id="ragGrid">
+            <div class="empty"><div class="ico">⏳</div><p>Yuklanmoqda...</p></div>
+          </div>
+        </div>
+
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input class="search-input" id="searchInput" type="text" placeholder="Savol yozing..."/>
+          <button class="search-btn" id="searchBtn" onclick="doSearch()">
+            <span id="btnTxt">Qidirish</span><span>→</span>
+          </button>
+        </div>
+        <div class="chips" id="chipsRow">
+          <span class="chip" onclick="setQ(this)">karta bloklangan</span>
+          <span class="chip" onclick="setQ(this)">kredit olish shartlari</span>
+          <span class="chip" onclick="setQ(this)">pul o'tkazma komissiya</span>
+          <span class="chip" onclick="setQ(this)">omonat foizi</span>
+        </div>
+        <div class="status" id="statusBar"></div>
+        <div id="results">
+          <div class="empty"><div class="ico">🌃</div><p id="emptyTxt">RAG tanlang va savol kiriting</p></div>
+        </div>
+      </div>
+
+      <div id="tabAdminContent" style="display:none">
+
+        <div class="admin-section">
+          <div class="admin-title"><span class="ico">📁</span> RAG qo'shish</div>
+          <div class="form-row">
+            <div class="form-field"><label>Nomi</label><input type="text" id="ragName" placeholder="RAG 2.9.3"/></div>
+            <div class="form-field"><label>Fayl nomi (data/ papkasida)</label><input type="text" id="ragFile" placeholder="rag_2_9_3.xlsx"/></div>
+            <div class="form-field"><label>Tavsif</label><input type="text" id="ragDesc" placeholder="Yangi versiya"/></div>
+          </div>
+          <button class="btn-add" onclick="addRag()">+ Qo'shish</button>
+          <div class="msg" id="ragMsg"></div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-title"><span class="ico">📋</span> RAG ro'yxati</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nomi</th><th>Fayl</th><th>Tavsif</th><th>Sana</th><th></th></tr></thead>
+              <tbody id="ragTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-title"><span class="ico">👤</span> Foydalanuvchi qo'shish</div>
+          <div class="form-row">
+            <div class="form-field"><label>Username</label><input type="text" id="newUser" placeholder="user2"/></div>
+            <div class="form-field"><label>Parol</label><input type="password" id="newPass" placeholder="••••••••"/></div>
+            <div class="form-field"><label>Ismi</label><input type="text" id="newName" placeholder="Ismi"/></div>
+            <div class="form-field"><label>Rol</label>
+              <select id="newRole"><option value="user">User</option><option value="admin">Admin</option></select>
+            </div>
+          </div>
+          <button class="btn-add" onclick="addUser()">+ Qo'shish</button>
+          <div class="msg" id="userMsg"></div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-title"><span class="ico">👥</span> Foydalanuvchilar</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Username</th><th>Ismi</th><th>Rol</th><th></th></tr></thead>
+              <tbody id="userTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div></div>
+  </div>
+</div>
+
+<footer>Made by <span>Mansur</span></footer>
+
+<script>
+const API = '';   // same origin
+let TOKEN = '';
+let ROLE  = '';
+let LANG  = 'uz';
+let selectedRag = null;
+let ragCounts = {};
+
+// ── i18n ──────────────────────────────────────────────────────────────────
+const T = {
+  uz: {
+    lblRag:   "RAG versiyasini tanlang",
+    searchPh: "Masalan: kredit puli qachon tushadi...",
+    btnTxt:   "Qidirish",
+    btnLoad:  "Qidirilmoqda...",
+    emptyTxt: "RAG tanlang va savol kiriting",
+    noRag:    "Avval RAG versiyasini tanlang ↑",
+    loading:  "AI tahlil qilmoqda...",
+    found:    n=>`✓ ${n} ta mos savol topildi`,
+    none:     "Mos savol topilmadi",
+    noneP:    "Boshqa so'z bilan qayta urinib ko'ring.",
+    chips:    ["karta bloklangan","kredit olish shartlari","pul o'tkazma komissiya","omonat foizi"],
+    mos:      "mos"
+  },
+  ru: {
+    lblRag:   "Выберите версию RAG",
+    searchPh: "Например: когда придут деньги кредита...",
+    btnTxt:   "Найти",
+    btnLoad:  "Поиск...",
+    emptyTxt: "Выберите RAG и введите вопрос",
+    noRag:    "Сначала выберите версию RAG ↑",
+    loading:  "AI анализирует...",
+    found:    n=>`✓ Найдено ${n} похожих вопросов`,
+    none:     "Похожих вопросов не найдено",
+    noneP:    "Попробуйте другую формулировку.",
+    chips:    ["карта заблокирована","условия кредита","комиссия перевода","проценты вклада"],
+    mos:      "совп."
+  }
+};
+
+function t(k,...a){ const fn=T[LANG][k]; return typeof fn==='function'?fn(...a):fn; }
+
+function setLang(lang){
+  LANG=lang;
+  document.getElementById('btnUz').classList.toggle('active',lang==='uz');
+  document.getElementById('btnRu').classList.toggle('active',lang==='ru');
+  document.getElementById('lbl-rag').textContent=t('lblRag');
+  document.getElementById('searchInput').placeholder=t('searchPh');
+  document.getElementById('btnTxt').textContent=t('btnTxt');
+  document.getElementById('emptyTxt').textContent=t('emptyTxt');
+  const chips=document.querySelectorAll('#chipsRow .chip');
+  t('chips').forEach((c,i)=>{ if(chips[i]) chips[i].textContent=c; });
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+async function api(method, path, body, auth=true){
+  const opts={method, headers:{'Content-Type':'application/json'}};
+  if(auth) opts.headers['Authorization']='Bearer '+TOKEN;
+  if(body) opts.body=JSON.stringify(body);
+  // Dinamik tarzda API o'zgaruvchisini qo'shib fetch so'rovi yuboramiz:
+  const r=await fetch(API + path, opts);
+  return r.json();
+}
+
+async function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value.trim();
+  const err=document.getElementById('loginErr');
+  err.textContent='';
+  if(!u||!p){ err.textContent='Login va parol kiriting'; return; }
+  try{
+    const d=await api('POST','/api/login',{username:u,password:p},false);
+    if(d.error){ err.textContent=d.error; return; }
+    TOKEN=d.token; ROLE=d.role;
+    document.getElementById('userName').textContent=d.name;
+    if(ROLE==='admin'){
+      document.getElementById('tabBar').style.display='flex';
+    }
+    showPage('appPage');
+    loadRags();
+  }catch(e){ err.textContent='Server bilan bog\'lanib bo\'lmadi. Server ishga tushirilganmi?'; }
+}
+
+function doLogout(){
+  api('POST','/api/logout');
+  TOKEN=''; ROLE='';
+  selectedRag=null;
+  showPage('loginPage');
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginErr').textContent='';
+}
+
+// ── NAV ──────────────────────────────────────────────────────────────────
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTab(tab){
+  document.getElementById('tabSearchContent').style.display=tab==='search'?'':'none';
+  document.getElementById('tabAdminContent').style.display=tab==='admin'?'':'none';
+  document.getElementById('tabSearch').classList.toggle('active',tab==='search');
+  document.getElementById('tabAdmin').classList.toggle('active',tab==='admin');
+  if(tab==='admin'){ loadAdminData(); }
+}
+
+// ── RAG SELECTOR ─────────────────────────────────────────────────────────
+async function loadRags(){
+  const grid=document.getElementById('ragGrid');
+  grid.innerHTML='<div class="empty"><div class="ico">⏳</div><p>Yuklanmoqda...</p></div>';
+  try{
+    const d=await api('GET','/api/rags');
+    if(!d.rags||!d.rags.length){
+      grid.innerHTML='<div class="empty"><p>Hali RAG qo\'shilmagan</p></div>'; return;
+    }
+    grid.innerHTML='';
+    d.rags.forEach(r=>{
+      const card=document.createElement('div');
+      card.className='rag-card';
+      card.dataset.id=r.id;
+      card.innerHTML=`<div class="rag-icon">📄</div>
+        <div class="rag-info">
+          <div class="rag-name">${r.name}</div>
+          <div class="rag-desc">${r.description||''}</div>
+          <div class="rag-count" id="cnt-${r.id}">Yuklanmoqda...</div>
+        </div>`;
+      card.onclick=()=>selectRag(r.id,card,r.name);
+      grid.appendChild(card);
+      // load count
+      api('GET',`/api/questions/${r.id}`).then(qd=>{
+        const el=document.getElementById(`cnt-${r.id}`);
+        if(el) el.textContent=`${qd.count||0} ta savol`;
+      }).catch(()=>{});
+    });
+  }catch(e){
+    grid.innerHTML='<div class="empty"><p>Server bilan bog\'lanib bo\'lmadi</p></div>';
+  }
+}
+
+function selectRag(id,card,name){
+  document.querySelectorAll('.rag-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedRag=id;
+  document.getElementById('results').innerHTML=`<div class="empty"><div class="ico">🔍</div><p>Savol yozing — <b>${name}</b> dan qidiradi</p></div>`;
+  document.getElementById('statusBar').textContent='';
+  document.getElementById('searchInput').focus();
+}
+
+// ── SEARCH ───────────────────────────────────────────────────────────────
+function setQ(el){ document.getElementById('searchInput').value=el.textContent; document.getElementById('searchInput').focus(); }
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginUser').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+  document.getElementById('searchInput').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
+});
+
+async function doSearch(){
+  const query=document.getElementById('searchInput').value.trim();
+  const status=document.getElementById('statusBar');
+  const results=document.getElementById('results');
+  const btn=document.getElementById('searchBtn');
+  if(!query) return;
+  if(!selectedRag){
+    status.className='status err'; status.textContent=t('noRag'); return;
+  }
+  btn.disabled=true;
+  document.getElementById('btnTxt').textContent=t('btnLoad');
+  status.className='status loading';
+  status.innerHTML=`<span class="spinner"></span>${t('loading')}`;
+  results.innerHTML='';
+  try{
+    const d=await api('POST','/api/search',{query,rag_id:selectedRag});
+    if(d.error){ status.className='status err'; status.textContent='Xato: '+d.error; results.innerHTML=''; }
+    else if(!d.results||!d.results.length){
+      status.className='status err'; status.textContent=t('none');
+      results.innerHTML=`<div class="empty"><div class="ico">🔭</div><p>${t('noneP')}</p></div>`;
+    } else {
+      status.className='status ok'; status.textContent=t('found',d.results.length);
+      results.innerHTML=d.results.map(m=>{
+        const mos=parseInt(m.mos)||0;
+        const cls=mos>=80?'high':mos>=60?'mid':'low';
+        const main=LANG==='ru'?(m.ru||m.uz):(m.uz||m.ru);
+        const sub=LANG==='ru'?m.uz:m.ru;
+        return `<div class="result-card ${cls}">
+          <div class="id-col"><span class="id-num">${m.id}</span><span class="id-lbl">ID</span></div>
+          <div class="vline"></div>
+          <div class="card-body">
+            <p class="q-main">${main||''}</p>
+            ${sub?`<p class="q-sub">${sub}</p>`:''}
+            <div class="score-row">
+              <div class="score-bg"><div class="score-fill" style="width:${mos}%"></div></div>
+              <span class="score-txt">${mos}% ${t('mos')}</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }catch(e){ status.className='status err'; status.textContent='Server xatosi: '+e.message; }
+  btn.disabled=false;
+  document.getElementById('btnTxt').textContent=t('btnTxt');
+}
+
+// ── ADMIN ────────────────────────────────────────────────────────────────
+async function loadAdminData(){
+  // RAG table
+  const d=await api('GET','/api/rags');
+  const tb=document.getElementById('ragTable');
+  tb.innerHTML=(d.rags||[]).map(r=>`
+    <tr>
+      <td><b>${r.name}</b></td>
+      <td style="color:var(--muted);font-size:12px">${r.file}</td>
+      <td style="color:var(--muted);font-size:12px">${r.description||'—'}</td>
+      <td style="color:var(--muted);font-size:12px">${r.added||''}</td>
+      <td><button class="btn-del" onclick="delRag('${r.id}')">O'chirish</button></td>
+    </tr>`).join('');
+
+  // User table
+  const ud=await api('GET','/api/admin/users');
+  const utb=document.getElementById('userTable');
+  utb.innerHTML=(ud.users||[]).map(u=>`
+    <tr>
+      <td>${u.username}</td>
+      <td>${u.name}</td>
+      <td><span class="badge ${u.role}">${u.role}</span></td>
+      <td>${u.username==='admin'?'':'<button class="btn-del" onclick="delUser(\''+u.username+'\')">O\'chirish</button>'}</td>
+    </tr>`).join('');
+}
+
+async function addRag(){
+  const name=document.getElementById('ragName').value.trim();
+  const file=document.getElementById('ragFile').value.trim();
+  const desc=document.getElementById('ragDesc').value.trim();
+  const msg=document.getElementById('ragMsg');
+  const d=await api('POST','/api/admin/add-rag',{name,file,description:desc});
+  if(d.error){ msg.className='msg err'; msg.textContent=d.error; }
+  else{ msg.className='msg ok'; msg.textContent='✓ Qo\'shildi!';
+    document.getElementById('ragName').value='';
+    document.getElementById('ragFile').value='';
+    document.getElementById('ragDesc').value='';
+    loadAdminData(); loadRags();
+  }
+}
+
+async function delRag(id){
+  if(!confirm('Bu RAG ni o\'chirasizmi?')) return;
+  await api('POST','/api/admin/delete-rag',{id});
+  loadAdminData(); loadRags();
+}
+
+async function addUser(){
+  const username=document.getElementById('newUser').value.trim();
+  const password=document.getElementById('newPass').value.trim();
+  const name=document.getElementById('newName').value.trim();
+  const role=document.getElementById('newRole').value;
+  const msg=document.getElementById('userMsg');
+  const d=await api('POST','/api/admin/add-user',{username,password,name,role});
+  if(d.error){ msg.className='msg err'; msg.textContent=d.error; }
+  else{ msg.className='msg ok'; msg.textContent='✓ Qo\'shildi!';
+    document.getElementById('newUser').value='';
+    document.getElementById('newPass').value='';
+    document.getElementById('newName').value='';
+    loadAdminData();
+  }
+}
+
+async function delUser(username){
+  if(!confirm(`${username} ni o'chirasizmi?`)) return;
+  await api('POST','/api/admin/delete-user',{username});
+  loadAdminData();
+}
+</script>
+</body>
+</html>
